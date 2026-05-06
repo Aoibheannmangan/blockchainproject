@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="contract.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <title>Blockchain Project - Transfer Ticket</title>
+</head>
+<body>
+    <nav class="main-nav">
+        <span class="brand">Blockchain Project - Aoibhean!!</span>
+        <div class="nav-actions">
+            <button class="nav-btn" onclick="window.location.href='index.html'">Create</button>
+            <button class="nav-btn" onclick="window.location.href='balances.html'">Balances</button>
+            <button class="nav-btn" onclick="window.location.href='buy.html'">Buy</button>
+            <button class="nav-btn active" onclick="window.location.href='transfer.html'">Transfer</button>
+        </div>
+    </nav>
+
+    <main>
+        <section class="page-section active">
+            <h2>Transfer Ticket</h2>
+            <label>
+                Recipient Address:
+                <input type="text" id="transferRecipient" placeholder="0x..."/>
+            </label>
+            <label>
+                Ticket Amount:
+                <input type="number" id="transferAmount" value="1" min="1"/>
+            </label>
+            <button id="transferTicketBtn">Transfer Ticket</button>
+            <p class="note">Use this page as vendor / doorman to return or move tickets.</p>
+        </section>
+    </main>
+
+    <div id="errorModal" class="modal">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+<script>
+    $(document).ready(async function() {
+        await connectMetaMask();
+
+        $("#transferTicketBtn").click(async function() {
+            if (!web3 || !account) {
+                const connected = await connectMetaMask();
+                if (!connected) return;
+            }
+            const recipient = $("#transferRecipient").val().trim();
+            const amount = parseInt($("#transferAmount").val()) || 1;
+            if (!recipient) {
+                showError('Enter a recipient address.');
+                return;
+            }
+            if (!web3.utils.isAddress(recipient)) {
+                showError('Invalid recipient address.');
+                return;
+            }
+            try {
+                const tokenAmount = web3.utils.toWei(amount.toString(), 'ether');
+                await contract.methods.transfer(recipient, tokenAmount).send({ from: account });
+                alert('Transferred ' + amount + ' ticket(s) to ' + recipient + '!');
+            } catch (err) {
+                showError('Error transferring ticket: ' + err.message);
+            }
+        });
+
+        $("#closeModal").click(function() {
+            $("#errorModal").css("display", "none");
+        });
+    });
+</script>
+</body>
+</html>

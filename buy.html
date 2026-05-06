@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="contract.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <title>Blockchain Project - Buy Ticket</title>
+</head>
+<body>
+    <nav class="main-nav">
+        <span class="brand">Blockchain Project - Aoibhean!!</span>
+        <div class="nav-actions">
+            <button class="nav-btn" onclick="window.location.href='index.html'">Create</button>
+            <button class="nav-btn" onclick="window.location.href='balances.html'">Balances</button>
+            <button class="nav-btn active" onclick="window.location.href='buy.html'">Buy</button>
+            <button class="nav-btn" onclick="window.location.href='transfer.html'">Transfer</button>
+        </div>
+    </nav>
+
+    <main>
+        <section class="page-section active">
+            <h2>Buy Ticket</h2>
+            <label>
+                Amount:
+                <input type="number" id="buyAmount" value="1" min="1"/>
+            </label>
+            <button id="buyTicketBtn">Buy Ticket</button>
+            <p class="note">Use this page as ticket buyer / attendee.</p>
+        </section>
+    </main>
+
+    <div id="errorModal" class="modal">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+<script>
+    $(document).ready(async function() {
+        await connectMetaMask();
+
+        $("#buyTicketBtn").click(async function() {
+            if (!web3 || !account) {
+                const connected = await connectMetaMask();
+                if (!connected) return;
+            }
+            const amount = parseInt($("#buyAmount").val()) || 1;
+            try {
+                const price = web3.utils.toWei((0.01 * amount).toString(), 'ether');
+                await contract.methods.buyTicket(amount).send({ from: account, value: price });
+                alert('Bought ' + amount + ' ticket(s)!');
+            } catch (err) {
+                showError('Error buying ticket: ' + err.message);
+            }
+        });
+
+        $("#closeModal").click(function() {
+            $("#errorModal").css("display", "none");
+        });
+    });
+</script>
+</body>
+</html>
