@@ -1,0 +1,117 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="contract.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <title>Blockchain Project - Buy Ticket</title>
+</head>
+<body>
+    <nav class="main-nav">
+        <span class="brand">
+            <img src="../assets/bow-tie-ribbon-svgrepo-com.svg" class="brand-ribbon" alt="">
+            Blockchain Project - Aoibheann!!
+            <img src="../assets/bow-tie-ribbon-svgrepo-com.svg" class="brand-ribbon" alt="">
+        </span>
+        <div class="nav-actions">
+            <button class="nav-btn" onclick="window.location.href='index.html'">Create</button>
+            <button class="nav-btn" onclick="window.location.href='balances.html'">Balances</button>
+            <button class="nav-btn active" onclick="window.location.href='buy.html'">Buy</button>
+            <button class="nav-btn" onclick="window.location.href='transfer.html'">Transfer</button>
+        </div>
+    </nav>
+
+    <div class="security-warning">
+        Never share your private key or keystore password with anyone. This app runs on the Sepolia testnet â€” do not use real funds.
+    </div>
+
+    <main>
+        <section class="page-section active">
+            <h2><img src="../assets/flower-with-rounded-petals-svgrepo-com.svg" class="heading-flower" alt="">Buy Ticket</h2>
+            <label for="buyAmount">Amount (max 10 per transaction):</label>
+            <input type="number" id="buyAmount" value="1" min="1" max="10"/>
+            <br/><br/>
+            <p class="note">Price: <strong>0.01 ETH</strong> per ticket. Max 10 per transaction.</p>
+            <br/>
+            <button id="buyTicketBtn">Buy Ticket</button>
+            <div id="txPending" class="tx-pending" style="display:none;">Transaction pending â€” please wait and do not close MetaMaskâ€¦</div>
+            <div id="txSuccess" class="tx-success" style="display:none;"></div>
+            <p class="note">Use this page as ticket buyer / attendee.</p>
+        </section>
+    </main>
+
+    <div id="errorModal" class="modal">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+<script>
+    $(document).ready(async function() {
+        // Connect to MetaMask as soon as the page loads
+        await connectMetaMask();
+
+        $("#buyTicketBtn").click(async function() {
+            if (!web3 || !account) {
+                const connected = await connectMetaMask();
+                if (!connected) return;
+            }
+
+            const amount = parseInt($("#buyAmount").val());
+
+            // Validate amount before touching the contract
+            if (!amount || amount < 1) {
+                showError('Amount must be at least 1.');
+                return;
+            }
+            if (amount > 10) {
+                showError('You cannot buy more than 10 tickets in one transaction.');
+                return;
+            }
+
+            // Each ticket costs 0.01 ETH â€” price is calculated in wei as required by the contract
+            const priceWei = web3.utils.toWei((0.01 * amount).toFixed(18), 'ether');
+
+            // Pre-check: make sure the wallet holds enough ETH before sending
+            const ethBal = await web3.eth.getBalance(account);
+            if (BigInt(ethBal) < BigInt(priceWei)) {
+                showError('Insufficient ETH balance â€” you need at least ' + web3.utils.fromWei(priceWei, 'ether') + ' ETH.');
+                return;
+            }
+
+            // Disable button and show pending state to prevent double-submit
+            const btn = $("#buyTicketBtn");
+            btn.prop('disabled', true).text('Pendingâ€¦');
+            $("#txPending").show();
+            $("#txSuccess").hide();
+
+            try {
+                // The value field sends ETH along with the call to satisfy the payable function
+                const receipt = await contract.methods.buyTicket(amount).send({ from: account, value: priceWei });
+                const txHash = receipt.transactionHash;
+                const etherscanUrl = 'https://sepolia.etherscan.io/tx/' + txHash;
+                $("#txSuccess").html(
+                    'Purchase successful! ' + amount + ' TIX added to your wallet.<br>' +
+                    '<a href="' + etherscanUrl + '" target="_blank" rel="noopener" class="tx-link">View on Sepolia Etherscan &rarr;</a>'
+                ).show();
+            } catch (err) {
+                showError(parseRevertReason(err));
+            } finally {
+                // Always re-enable the button and hide the pending indicator
+                btn.prop('disabled', false).text('Buy Ticket');
+                $("#txPending").hide();
+            }
+        });
+
+        $("#closeModal").click(function() {
+            $("#errorModal").css("display", "none");
+        });
+    });
+</script>
+</body>
+</html>
+

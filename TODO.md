@@ -21,13 +21,13 @@
 ## 2. FRONT END VALIDATION & ARCHITECTURE (30%)
 
 ### 2.1 Wallet Creation — `index.html` ✅ mostly done
-- [ ] Add a **visible security warning** on the page telling the user never to share their private key (rubric checks that you validated the AI's approach to key management)
+- [✅ ] Add a **visible security warning** on the page telling the user never to share their private key (rubric checks that you validated the AI's approach to key management)
 - [ ] Confirm the three requirements are clearly met on the page: key generation, display, and secure download
 
 ### 2.2 Balance Check — `balances.html` ❌ major gap
 > Rubric requires **distinct logic for three actor roles: attendee, doorman, venue**. Right now the page just shows the connected wallet's balance — no role separation at all.
 
-- [ ] Split the balances page into **three role views**:
+- [✅ ] Split the balances page into **three role views**:
   - **Attendee** — shows their own ETH + TIX balance (current behaviour)
   - **Doorman** — input any wallet address, look up that address's TIX balance to verify a ticket at the door
   - **Venue/Vendor** — shows the contract's ETH balance (funds collected) + vendor's TIX balance + total supply

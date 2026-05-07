@@ -1,0 +1,147 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="contract.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <title>Blockchain Project - Create Wallet</title>
+</head>
+<body>
+    <nav class="main-nav">
+        <span class="brand">
+            <img src="../assets/bow-tie-ribbon-svgrepo-com.svg" class="brand-ribbon" alt="">
+            Blockchain Project - Aoibheann!!
+            <img src="../assets/bow-tie-ribbon-svgrepo-com.svg" class="brand-ribbon" alt="">
+        </span>
+        <div class="nav-actions">
+            <button class="nav-btn active" onclick="window.location.href='index.html'">Create</button>
+            <button class="nav-btn" onclick="window.location.href='balances.html'">Balances</button>
+            <button class="nav-btn" onclick="window.location.href='buy.html'">Buy</button>
+            <button class="nav-btn" onclick="window.location.href='transfer.html'">Transfer</button>
+        </div>
+    </nav>
+
+    <div class="security-warning">
+        Never share your private key or keystore password with anyone. This app runs on the Sepolia testnet â€” do not use real funds.
+    </div>
+
+    <main>
+        <section class="page-section active">
+            <h2><img src="../assets/flower-with-rounded-petals-svgrepo-com.svg" class="heading-flower" alt="">Create Wallet</h2>
+
+            <label for="walletPassword">Keystore Password:</label>
+            <input type="password" id="walletPassword" placeholder="Enter a password for the Keystore"/>
+            <div id="pwStrength" class="pw-strength"></div>
+
+            <br/><br/>
+            <button id="createWalletBtn">Create Wallet</button>
+
+            <label for="walletAddress">Wallet Address:</label>
+            <textarea id="walletAddress" rows="2" readonly></textarea>
+
+            <label for="privateKey">
+                Private Key:
+                <button type="button" id="toggleKeyBtn" class="btn-inline">Show</button>
+            </label>
+            <textarea id="privateKey" rows="2" readonly class="blurred"></textarea>
+
+            <label for="keystoreField">Keystore File:</label>
+            <textarea id="keystoreField" rows="4" readonly></textarea>
+
+            <br/><br/>
+            <a class="btn" id="downloadKeystoreBtn">Download Keystore</a>
+        </section>
+    </main>
+
+    <div id="errorModal" class="modal">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+<script>
+    $(document).ready(function() {
+
+        // Classify password strength as the user types to guide them toward a safe choice
+        $("#walletPassword").on('input', function() {
+            const pw = $(this).val();
+            const el = $("#pwStrength");
+            if (!pw) { el.text('').attr('class', 'pw-strength'); return; }
+            if (pw.length < 8) {
+                el.text('Weak â€” at least 8 characters recommended').attr('class', 'pw-strength pw-weak');
+            } else if (pw.length < 12 || !/[0-9]/.test(pw) || !/[^A-Za-z0-9]/.test(pw)) {
+                el.text('OK â€” add numbers and symbols for a stronger password').attr('class', 'pw-strength pw-ok');
+            } else {
+                el.text('Strong').attr('class', 'pw-strength pw-strong');
+            }
+        });
+
+        // Toggle blur on the private key field â€” hidden by default to prevent shoulder surfing
+        $("#toggleKeyBtn").click(function() {
+            const field = $("#privateKey");
+            if (field.hasClass('blurred')) {
+                field.removeClass('blurred');
+                $(this).text('Hide');
+            } else {
+                field.addClass('blurred');
+                $(this).text('Show');
+            }
+        });
+
+        // Generate a brand-new wallet and encrypt it into a keystore using the chosen password
+        $("#createWalletBtn").click(function() {
+            const password = $("#walletPassword").val();
+            if (password === "") {
+                showError("Please enter a password for the Keystore.");
+                return;
+            }
+            // A provider-less Web3 instance is used here so wallet creation
+            // never touches the network â€” keys are generated locally only
+            const localWeb3 = new Web3();
+            const wallet = localWeb3.eth.accounts.create();
+            $("#walletAddress").val(wallet.address);
+            // Private key starts blurred â€” user must click Show to reveal it
+            $("#privateKey").val(wallet.privateKey).addClass('blurred');
+            $("#toggleKeyBtn").text('Show');
+            // Encrypt the private key with the user's password to produce a keystore file
+            const keystore = localWeb3.eth.accounts.encrypt(wallet.privateKey, password);
+            $("#keystoreField").val(JSON.stringify(keystore, null, 2));
+        });
+
+        // Package the keystore JSON as a downloadable file named after the wallet address
+        $("#downloadKeystoreBtn").click(function() {
+            const keystore = $("#keystoreField").val();
+            if (!keystore) {
+                showError('Create a wallet first.');
+                return;
+            }
+            const walletAddr = $("#walletAddress").val();
+            const blob = new Blob([keystore], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = walletAddr + '.json';
+            a.click();
+        });
+
+        // Clear all sensitive fields when the user navigates away to prevent key exposure
+        window.addEventListener('beforeunload', function() {
+            $("#walletPassword").val('');
+            $("#privateKey").val('').addClass('blurred');
+            $("#walletAddress").val('');
+            $("#keystoreField").val('');
+        });
+
+        // Close the error modal when the user dismisses it
+        $("#closeModal").click(function() {
+            $("#errorModal").css("display", "none");
+        });
+    });
+</script>
+</body>
+</html>
+

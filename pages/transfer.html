@@ -1,0 +1,155 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="contract.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <title>Blockchain Project - Transfer Ticket</title>
+</head>
+<body>
+    <nav class="main-nav">
+        <span class="brand">
+            <img src="../assets/bow-tie-ribbon-svgrepo-com.svg" class="brand-ribbon" alt="">
+            Blockchain Project - Aoibheann!!
+            <img src="../assets/bow-tie-ribbon-svgrepo-com.svg" class="brand-ribbon" alt="">
+        </span>
+        <div class="nav-actions">
+            <button class="nav-btn" onclick="window.location.href='index.html'">Create</button>
+            <button class="nav-btn" onclick="window.location.href='balances.html'">Balances</button>
+            <button class="nav-btn" onclick="window.location.href='buy.html'">Buy</button>
+            <button class="nav-btn active" onclick="window.location.href='transfer.html'">Transfer</button>
+        </div>
+    </nav>
+
+    <div class="security-warning">
+        Never share your private key or keystore password with anyone. This app runs on the Sepolia testnet â€” do not use real funds.
+    </div>
+
+    <main>
+        <section class="page-section active">
+            <h2><img src="../assets/flower-with-rounded-petals-svgrepo-com.svg" class="heading-flower" alt="">Transfer Ticket</h2>
+
+            <label for="transferRecipient">Recipient Address:</label>
+            <div class="input-row">
+                <input type="text" id="transferRecipient" placeholder="0x..."/>
+                <button id="returnToVendorBtn" class="btn-secondary">Return to Vendor</button>
+            </div>
+
+            <label for="transferAmount">Ticket Amount:</label>
+            <input type="number" id="transferAmount" value="1" min="1"/>
+
+            <div id="senderBalance" class="info" style="margin-top:12px;"></div>
+            <br/>
+            <button id="transferTicketBtn">Transfer Ticket</button>
+            <div id="txPending" class="tx-pending" style="display:none;">Transaction pending â€” please wait and do not close MetaMaskâ€¦</div>
+            <div id="txSuccess" class="tx-success" style="display:none;"></div>
+            <p class="note">Use this page as vendor / doorman to return or move tickets.</p>
+        </section>
+    </main>
+
+    <div id="errorModal" class="modal">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+<script>
+    $(document).ready(async function() {
+        // Connect to MetaMask as soon as the page loads and show sender's current balance
+        const connected = await connectMetaMask();
+        if (connected) loadSenderBalance();
+
+        // Fetch and display the connected wallet's TIX balance so the user knows what they can send
+        async function loadSenderBalance() {
+            try {
+                const bal = await contract.methods.balanceOf(account).call();
+                const formatted = web3.utils.fromWei(bal, 'ether');
+                $("#senderBalance").html('<p>Your TIX balance: <strong>' + formatted + '</strong> TIX</p>');
+            } catch (err) {
+                // Non-fatal â€” balance display failing shouldn't block the transfer form
+            }
+        }
+
+        // Pre-fill the recipient field with the vendor's address so returning tickets is one click
+        $("#returnToVendorBtn").click(async function() {
+            if (!web3 || !contract) {
+                const ok = await connectMetaMask();
+                if (!ok) return;
+            }
+            try {
+                const vendorAddress = await contract.methods.vendor().call();
+                $("#transferRecipient").val(vendorAddress);
+            } catch (err) {
+                showError('Could not fetch vendor address: ' + err.message);
+            }
+        });
+
+        $("#transferTicketBtn").click(async function() {
+            if (!web3 || !account) {
+                const connected = await connectMetaMask();
+                if (!connected) return;
+            }
+
+            const recipient = $("#transferRecipient").val().trim();
+            const amount = parseInt($("#transferAmount").val());
+
+            // Validate inputs before touching the contract
+            if (!recipient) {
+                showError('Enter a recipient address.');
+                return;
+            }
+            if (!web3.utils.isAddress(recipient)) {
+                showError('Invalid recipient address â€” please check and try again.');
+                return;
+            }
+            if (!amount || amount < 1) {
+                showError('Amount must be at least 1.');
+                return;
+            }
+
+            // Pre-check: ensure the sender holds enough TIX before sending the transaction
+            const tokenAmount = web3.utils.toWei(amount.toString(), 'ether');
+            const bal = await contract.methods.balanceOf(account).call();
+            if (BigInt(bal) < BigInt(tokenAmount)) {
+                showError('You do not have enough TIX tokens â€” your balance is ' + web3.utils.fromWei(bal, 'ether') + ' TIX.');
+                return;
+            }
+
+            // Disable button and show pending state to prevent double-submit
+            const btn = $("#transferTicketBtn");
+            btn.prop('disabled', true).text('Pendingâ€¦');
+            $("#txPending").show();
+            $("#txSuccess").hide();
+
+            try {
+                // Convert whole ticket amount to the 18-decimal token unit the contract expects
+                const receipt = await contract.methods.transfer(recipient, tokenAmount).send({ from: account });
+                const txHash = receipt.transactionHash;
+                const etherscanUrl = 'https://sepolia.etherscan.io/tx/' + txHash;
+                $("#txSuccess").html(
+                    'Transfer successful! ' + amount + ' TIX sent to ' + recipient + '.<br>' +
+                    '<a href="' + etherscanUrl + '" target="_blank" rel="noopener" class="tx-link">View on Sepolia Etherscan &rarr;</a>'
+                ).show();
+                // Refresh the sender's balance so they can see the updated amount immediately
+                loadSenderBalance();
+            } catch (err) {
+                showError(parseRevertReason(err));
+            } finally {
+                // Always re-enable the button and hide the pending indicator
+                btn.prop('disabled', false).text('Transfer Ticket');
+                $("#txPending").hide();
+            }
+        });
+
+        $("#closeModal").click(function() {
+            $("#errorModal").css("display", "none");
+        });
+    });
+</script>
+</body>
+</html>
+

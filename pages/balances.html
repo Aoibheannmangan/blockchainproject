@@ -1,0 +1,184 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="contract.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <title>Blockchain Project - Balances</title>
+</head>
+<body>
+    <nav class="main-nav">
+        <span class="brand">
+            <img src="../assets/bow-tie-ribbon-svgrepo-com.svg" class="brand-ribbon" alt="">
+            Blockchain Project - Aoibheann!!
+            <img src="../assets/bow-tie-ribbon-svgrepo-com.svg" class="brand-ribbon" alt="">
+        </span>
+        <div class="nav-actions">
+            <button class="nav-btn" onclick="window.location.href='index.html'">Create</button>
+            <button class="nav-btn active" onclick="window.location.href='balances.html'">Balances</button>
+            <button class="nav-btn" onclick="window.location.href='buy.html'">Buy</button>
+            <button class="nav-btn" onclick="window.location.href='transfer.html'">Transfer</button>
+        </div>
+    </nav>
+
+    <div class="security-warning">
+        Never share your private key or keystore password with anyone. This app runs on the Sepolia testnet â€” do not use real funds.
+    </div>
+
+    <main>
+        <section class="page-section active">
+            <h2><img src="../assets/flower-with-rounded-petals-svgrepo-com.svg" class="heading-flower" alt="">Balances</h2>
+
+            <!-- Role selector tabs -->
+            <div class="role-tabs">
+                <button class="role-tab active" data-role="attendeeView">Attendee</button>
+                <button class="role-tab" data-role="doormanView">Doorman</button>
+                <button class="role-tab" data-role="venueView">Venue</button>
+            </div>
+
+            <!-- Attendee: connected wallet's own ETH + TIX balances -->
+            <div id="attendeeView" class="role-view active">
+                <p class="role-desc">Your connected wallet's current balances.</p>
+                <div class="info">
+                    <p>ETH Balance: <strong><span id="ethBalance">-</span></strong></p>
+                    <p>Ticket Token Balance: <strong><span id="ticketBalance">-</span></strong> TIX</p>
+                </div>
+                <button id="refreshAttendeeBtn">Refresh</button>
+            </div>
+
+            <!-- Doorman: look up any address's TIX balance to verify a ticket at the door -->
+            <div id="doormanView" class="role-view">
+                <p class="role-desc">Check how many tickets any wallet holds â€” use this to verify entry at the door.</p>
+                <label for="checkAddress">Wallet Address to Check:</label>
+                <input type="text" id="checkAddress" placeholder="0x..."/>
+                <br/><br/>
+                <button id="checkTicketBtn">Check Tickets</button>
+                <div id="doormanResult" class="info"></div>
+            </div>
+
+            <!-- Venue: contract ETH balance, vendor's TIX holdings, and total supply -->
+            <div id="venueView" class="role-view">
+                <p class="role-desc">Contract financials and overall token distribution.</p>
+                <div class="info">
+                    <p>Contract ETH Balance: <strong><span id="contractEthBalance">-</span></strong> ETH</p>
+                    <p>Vendor TIX Balance: <strong><span id="vendorTicketBalance">-</span></strong> TIX</p>
+                    <p>Total TIX Supply: <strong><span id="totalSupply">-</span></strong> TIX</p>
+                </div>
+                <button id="refreshVenueBtn">Refresh</button>
+            </div>
+        </section>
+    </main>
+
+    <div id="errorModal" class="modal">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+<script>
+    $(document).ready(async function() {
+        // Connect to MetaMask and auto-load the attendee view on page open
+        const connected = await connectMetaMask();
+        if (connected) loadAttendeeBalances();
+
+        // Switch between the three role views
+        $(".role-tab").click(function() {
+            $(".role-tab").removeClass("active");
+            $(this).addClass("active");
+            $(".role-view").removeClass("active");
+            $("#" + $(this).data("role")).addClass("active");
+        });
+
+        // â”€â”€ Attendee: own ETH + TIX balance â”€â”€
+        async function loadAttendeeBalances() {
+            try {
+                // Fetch native ETH balance and convert from wei to ether
+                const ethBal = await web3.eth.getBalance(account);
+                $("#ethBalance").text(web3.utils.fromWei(ethBal, 'ether'));
+
+                // TIX uses 18 decimals so fromWei conversion applies here too
+                const ticketBal = await contract.methods.balanceOf(account).call();
+                $("#ticketBalance").text(web3.utils.fromWei(ticketBal, 'ether'));
+            } catch (err) {
+                showError('Error fetching attendee balances: ' + err.message);
+            }
+        }
+
+        $("#refreshAttendeeBtn").click(async function() {
+            if (!web3 || !account) {
+                const ok = await connectMetaMask();
+                if (!ok) return;
+            }
+            loadAttendeeBalances();
+        });
+
+        // â”€â”€ Doorman: look up any address's TIX balance â”€â”€
+        $("#checkTicketBtn").click(async function() {
+            if (!web3 || !account) {
+                const ok = await connectMetaMask();
+                if (!ok) return;
+            }
+            const address = $("#checkAddress").val().trim();
+            if (!address) {
+                showError('Please enter a wallet address to check.');
+                return;
+            }
+            if (!web3.utils.isAddress(address)) {
+                showError('Invalid wallet address.');
+                return;
+            }
+            try {
+                const ticketBal = await contract.methods.balanceOf(address).call();
+                const formatted = web3.utils.fromWei(ticketBal, 'ether');
+                const hasTickets = parseFloat(formatted) > 0;
+                // Show a clear pass/fail result so the doorman can quickly verify entry
+                $("#doormanResult").html(
+                    '<p><strong>Address:</strong> ' + address + '</p>' +
+                    '<p><strong>TIX Balance:</strong> ' + formatted + '</p>' +
+                    '<p><strong>Entry:</strong> ' + (hasTickets ? 'Valid ticket holder' : 'No tickets â€” entry denied') + '</p>'
+                );
+            } catch (err) {
+                showError('Error checking address: ' + err.message);
+            }
+        });
+
+        // â”€â”€ Venue: contract ETH balance, vendor TIX holdings, total supply â”€â”€
+        async function loadVenueBalances() {
+            try {
+                // ETH held in the contract â€” accumulated from all ticket purchases
+                const contractEth = await web3.eth.getBalance(CONTRACT_ADDRESS);
+                $("#contractEthBalance").text(web3.utils.fromWei(contractEth, 'ether'));
+
+                // Fetch the vendor address from the contract, then look up their TIX balance
+                const vendorAddress = await contract.methods.vendor().call();
+                const vendorBal = await contract.methods.balanceOf(vendorAddress).call();
+                $("#vendorTicketBalance").text(web3.utils.fromWei(vendorBal, 'ether'));
+
+                // Total TIX minted â€” decreases as tickets are sold to attendees
+                const supply = await contract.methods.totalSupply().call();
+                $("#totalSupply").text(web3.utils.fromWei(supply, 'ether'));
+            } catch (err) {
+                showError('Error fetching venue balances: ' + err.message);
+            }
+        }
+
+        $("#refreshVenueBtn").click(async function() {
+            if (!web3 || !account) {
+                const ok = await connectMetaMask();
+                if (!ok) return;
+            }
+            loadVenueBalances();
+        });
+
+        $("#closeModal").click(function() {
+            $("#errorModal").css("display", "none");
+        });
+    });
+</script>
+</body>
+</html>
+
