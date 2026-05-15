@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -25,7 +25,7 @@
     </nav>
 
     <div class="security-warning">
-        Never share your private key or keystore password with anyone. This app runs on the Sepolia testnet â€” do not use real funds.
+        Never share your private key or keystore password with anyone. This app runs on the Sepolia testnet &mdash; do not use real funds.
     </div>
 
     <main>
@@ -37,7 +37,7 @@
             <p class="note">Price: <strong>0.01 ETH</strong> per ticket. Max 10 per transaction.</p>
             <br/>
             <button id="buyTicketBtn">Buy Ticket</button>
-            <div id="txPending" class="tx-pending" style="display:none;">Transaction pending â€” please wait and do not close MetaMaskâ€¦</div>
+            <div id="txPending" class="tx-pending" style="display:none;">Transaction pending &mdash; please wait and do not close MetaMask&hellip;</div>
             <div id="txSuccess" class="tx-success" style="display:none;"></div>
             <p class="note">Use this page as ticket buyer / attendee.</p>
         </section>
@@ -73,19 +73,19 @@
                 return;
             }
 
-            // Each ticket costs 0.01 ETH â€” price is calculated in wei as required by the contract
+            // Each ticket costs 0.01 ETH - price calculated in wei as required by the contract
             const priceWei = web3.utils.toWei((0.01 * amount).toFixed(18), 'ether');
 
             // Pre-check: make sure the wallet holds enough ETH before sending
             const ethBal = await web3.eth.getBalance(account);
             if (BigInt(ethBal) < BigInt(priceWei)) {
-                showError('Insufficient ETH balance â€” you need at least ' + web3.utils.fromWei(priceWei, 'ether') + ' ETH.');
+                showError('Insufficient ETH balance - you need at least ' + web3.utils.fromWei(priceWei, 'ether') + ' ETH.');
                 return;
             }
 
             // Disable button and show pending state to prevent double-submit
             const btn = $("#buyTicketBtn");
-            btn.prop('disabled', true).text('Pendingâ€¦');
+            btn.prop('disabled', true).text('Pending...');
             $("#txPending").show();
             $("#txSuccess").hide();
 
@@ -114,4 +114,3 @@
 </script>
 </body>
 </html>
-

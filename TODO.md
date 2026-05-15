@@ -4,118 +4,105 @@
 
 ## 1. AI-ENHANCED CODE REVIEW PROCESS (25%)
 
-> **Currently: nothing done here — this is the biggest risk to your grade.**
-
-- [ ] **Initialise a git repo** (`git init`) and make proper commits with descriptive messages
-- [ ] **Create a GitHub repo** and push the project
-- [ ] **Open a Pull Request** (e.g. a feature branch → main) so there is a reviewable PR URL
-- [ ] **Document the AI review process** — add a file (e.g. `REVIEW.md`) that logs:
-  - The PR link
-  - AI-generated review comments
-  - How you resolved each comment
-  - The final commit hash after resubmission
-- [ ] Make sure every step has a **traceable link** (PR → comment → fix → commit hash)
+- [x] **Initialise a git repo** — repo exists with commits on `main`
+- [x] **Create a GitHub repo** — exists at https://github.com/Aoibheannmangan/blockchainproject
+- [ ] **Open a Pull Request** (feature branch → main) so there is a reviewable PR URL
+- [x] **Document the AI review process** — `REVIEW.md` created with 14 findings, resolutions, and severity ratings
+- [ ] **Fill in the PR link and final commit hash** in `REVIEW.md` (do this after opening the PR)
 
 ---
 
 ## 2. FRONT END VALIDATION & ARCHITECTURE (30%)
 
-### 2.1 Wallet Creation — `index.html` ✅ mostly done
-- [✅ ] Add a **visible security warning** on the page telling the user never to share their private key (rubric checks that you validated the AI's approach to key management)
-- [ ] Confirm the three requirements are clearly met on the page: key generation, display, and secure download
+### 2.1 Wallet Creation — `pages/index.html`
+- [x] Visible security warning banner on every page
+- [x] Key generation (wallet created locally with no network call)
+- [x] Private key display with blur/show toggle
+- [x] Secure download (keystore encrypted with password, downloaded as JSON)
+- [x] Password strength indicator (Weak / OK / Strong)
+- [x] Sensitive fields cleared on page navigation (`beforeunload`)
 
-### 2.2 Balance Check — `balances.html` ❌ major gap
-> Rubric requires **distinct logic for three actor roles: attendee, doorman, venue**. Right now the page just shows the connected wallet's balance — no role separation at all.
+### 2.2 Balance Check — `pages/balances.html`
+- [x] **Attendee view** — connected wallet's ETH + TIX balance
+- [x] **Doorman view** — look up any address's TIX balance, shows "Valid ticket holder" / "No tickets — entry denied"
+- [x] **Venue view** — contract ETH balance, vendor TIX balance, total supply
+- [ ] Auto-refresh balances from `buy.html` / `transfer.html` without a manual button click (cross-page auto-refresh — would need localStorage or URL params)
 
-- [✅ ] Split the balances page into **three role views**:
-  - **Attendee** — shows their own ETH + TIX balance (current behaviour)
-  - **Doorman** — input any wallet address, look up that address's TIX balance to verify a ticket at the door
-  - **Venue/Vendor** — shows the contract's ETH balance (funds collected) + vendor's TIX balance + total supply
-- [ ] Add **auto-refresh** after any buy/transfer action so balances update without a manual button click
+### 2.3 Ticket Purchase — `pages/buy.html`
+- [x] "Transaction pending..." loading state while MetaMask is processing
+- [x] Transaction hash shown as a Sepolia Etherscan link after success
+- [x] Contract revert reasons parsed into plain English via `parseRevertReason()`
+- [x] Amount validated > 0 and <= 10 before any transaction is sent
+- [x] ETH balance pre-checked before sending
 
-### 2.3 Ticket Purchase — `buy.html` ❌ needs UX work
-- [ ] Show a **"Transaction pending…"** loading state while MetaMask is processing
-- [ ] Show the **transaction hash** as a Sepolia Etherscan link after a successful purchase
-- [ ] **Parse contract revert reasons** from the error message and show them in plain English (e.g. "Incorrect native currency sent" → "Wrong ETH amount — please try again")
-- [ ] Validate that amount > 0 before sending the transaction
-
-### 2.4 Token Transfer — `transfer.html` ❌ needs specific feature
-- [ ] Add a **"Return to Vendor" button** with the vendor address pre-filled — the rubric explicitly mentions transferring tokens back to the vendor
-- [ ] **Auto-refresh balances** (both sender and recipient) after a successful transfer to prove the contract state updated correctly
-- [ ] Show the transaction hash as a Sepolia Etherscan link after success
+### 2.4 Token Transfer — `pages/transfer.html`
+- [x] "Return to Vendor" button with vendor address pre-filled
+- [x] Sender TIX balance shown and auto-refreshed after a successful transfer
+- [x] Transaction hash shown as a Sepolia Etherscan link after success
+- [x] TIX balance pre-checked before sending
 
 ---
 
 ## 3. BLOCKCHAIN MANAGEMENT & REPORTING (30%)
 
-### 3.1 Smart Contract — `contracts/TicketToken.sol` ❌ needs security + gas work
-- [ ] Add a **ReentrancyGuard** — the rubric explicitly calls this out as an expected security pattern. Import from OpenZeppelin or write a simple `nonReentrant` modifier manually, and apply it to `withdrawFunds`
-- [ ] Add a `WithdrawalMade` **event** to `withdrawFunds` so it is traceable on-chain
-- [ ] Use **`unchecked`** blocks around balance arithmetic where underflow/overflow is already guarded (e.g. inside `_transfer` after the `require`) to save gas
-- [ ] Cache `10 ** decimals` as an **immutable constant** (`uint256 public constant DECIMALS_FACTOR = 10 ** 18`) instead of computing it each call
-- [ ] Redeploy to Sepolia after changes and update `CONTRACT_ADDRESS` in `contract.js`
+### 3.1 Smart Contract — `contracts/TicketToken.sol`
+- [x] `nonReentrant` modifier applied to `buyTicket` and `withdrawFunds`
+- [x] `WithdrawalMade` event emitted in `withdrawFunds`
+- [x] `unchecked` blocks on balance arithmetic in `_transfer` and `_mint`
+- [x] NatSpec comments (`/// @notice`, `/// @dev`) on every function
+- [x] `whenNotPaused` modifier + `pause()` / `unpause()` (vendor only)
+- [x] `MAX_PER_TRANSACTION = 10` cap enforced in `buyTicket`
+- [x] Zero-address checks on `transfer` and `transferFrom`
+- [ ] Cache `10 ** decimals` as a named constant (`DECIMALS_FACTOR`) — currently computed inline
+- [ ] **Redeploy to Sepolia** after the above changes and update `CONTRACT_ADDRESS` in `contract.js`
 
 ### 3.2 Project Submission Structure (5%)
-- [ ] Organise the final zip so it contains:
-  - All HTML pages (`index.html`, `balances.html`, `buy.html`, `transfer.html`)
-  - `contract.js`, `styles.css`
-  - `contracts/TicketToken.sol`
-  - `REVIEW.md` (AI review log)
-  - `REPORT.md` (see below)
-  - `TESTING.md` (see below)
-- [ ] Double-check nothing is missing before zipping
+- [x] `pages/` folder contains all HTML, `contract.js`, `styles.css`
+- [x] `contracts/TicketToken.sol` present
+- [x] `REVIEW.md`, `REPORT.md`, `TESTING.md`, `README.md` all created
+- [ ] Fill in personal sections of `REPORT.md` (your own words + Sepolia tx links)
+- [ ] Fill in manual test results in `TESTING.md` (run on Sepolia, paste tx hashes)
+- [ ] Zip the final project for submission
 
-### 3.3 Report — `REPORT.md` ❌ completely missing
-> This file does not exist yet and is worth 10% of your grade.
-
-- [ ] Create `REPORT.md` and include:
-  - An explanation of **why you chose web3.js + jQuery** over ethers.js
-  - A walkthrough of the **smart contract design decisions** (ERC-20 base, SETH purchase extension, reentrancy guard)
-  - **Transaction links** — paste Sepolia Etherscan links for at least: a `buyTicket` tx, a `transfer` tx, and a `withdrawFunds` tx
-  - Commentary on each transaction confirming it succeeded and what you verified
-  - An explanation of **why the three actor roles** were separated in the balance page
-  - Your own commentary — not AI-generated text
+### 3.3 Report — `REPORT.md`
+- [x] File created with all required sections and structure
+- [ ] **Fill in your own commentary** — technology choices, design decisions, reflection (cannot be AI-generated)
+- [ ] **Paste Sepolia Etherscan links** for a `buyTicket` tx, `transfer` tx, and `withdrawFunds` tx
 
 ---
 
 ## 4. MANAGERIAL OVERSIGHT & QA (15%)
 
-### 4.1 Human-Written Documentation ❌ no comments exist
-- [ ] Add short, human-written comments to every function in `contract.js` and each page's `<script>` block explaining **why** the logic works that way (not just what it does)
-- [ ] Add **Solidity NatSpec comments** (`/// @notice`, `/// @dev`) to each function in `TicketToken.sol`
+### 4.1 Human-Written Documentation
+- [x] Comments on every function in `contract.js` explaining the why
+- [x] Comments in every page's `<script>` block
+- [x] Solidity NatSpec (`/// @notice`, `/// @dev`) on every function in `TicketToken.sol`
 
-### 4.2 Code Efficiency ❌ not addressed
-- [ ] In the contract: apply the `unchecked` and `DECIMALS_FACTOR` improvements from 3.1 above
-- [ ] In the frontend: avoid calling `connectMetaMask()` on every button click if already connected — check `if (!account)` once at load and store the result
+### 4.2 Code Efficiency
+- [x] `unchecked` arithmetic in `_transfer` and `_mint`
+- [x] `connectMetaMask()` called once on load; click handlers only reconnect if `!web3 || !account`
+- [ ] `DECIMALS_FACTOR` constant (minor — `10 ** decimals` still computed inline)
 
-### 4.3 Error Handling ❌ currently generic
-- [ ] Replace the raw `err.message` output with a **human-readable message parser** — extract the revert reason string from the error and display that instead
-- [ ] Add a **loading/disabled state** on every button while a transaction is pending so the user cannot double-submit
-- [ ] Validate inputs **before** sending any transaction (amount > 0, address is valid, sufficient balance)
+### 4.3 Error Handling
+- [x] `parseRevertReason()` maps all contract revert strings to plain English
+- [x] Buttons disabled and labelled "Pending..." during transactions
+- [x] Inputs validated (amount > 0, valid address, sufficient balance) before any transaction
 
-### 4.4 Testing — `TESTING.md` ❌ completely missing
-- [ ] Create `TESTING.md` documenting test cases, for example:
-  - Buy 1 ticket with correct ETH → expect success + balance increase
-  - Buy 1 ticket with wrong ETH amount → expect revert "Incorrect native currency sent"
-  - Transfer to invalid address → expect frontend validation error
-  - Transfer more tickets than balance → expect revert "Insufficient balance"
-  - Doorman looks up an address with 0 tickets → expect 0 displayed
-  - Non-vendor calls `withdrawFunds` → expect revert "Only vendor can withdraw"
-- [ ] Run each test case manually on Sepolia and paste the result (pass/fail + tx hash or screenshot) into `TESTING.md`
+### 4.4 Testing
+- [x] `TESTING.md` created with 16 test cases covering all major flows
+- [x] `test/TicketToken.test.js` written with automated Hardhat unit tests (30 cases)
+- [ ] **Run each manual test case on Sepolia** and fill in pass/fail + tx hashes in `TESTING.md`
+- [ ] Run `npx hardhat test` and paste output into `TESTING.md` (needs Hardhat install to complete)
 
 ---
 
-## Quick Priority Order
+## What Still Needs You (cannot be done by AI)
 
-| Priority | Item | Rubric weight |
-|---|---|---|
-| 1 | Git repo + PR + `REVIEW.md` | 25% |
-| 2 | `REPORT.md` | 10% |
-| 3 | Three-role balance page | 10% |
-| 4 | Add ReentrancyGuard + redeploy | 15% |
-| 5 | `TESTING.md` | 5% |
-| 6 | Transaction hash links + loading states in buy/transfer | 10% |
-| 7 | "Return to Vendor" button in transfer | 5% |
-| 8 | Code comments + NatSpec | 5% |
-| 9 | Efficiency (unchecked, constants) | 2.5% |
-| 10 | Submission zip structure | 5% |
+| Item | Why it needs you |
+|---|---|
+| Open a PR on GitHub | Requires pushing a branch and clicking on GitHub |
+| Fill in `REPORT.md` personal sections | Rubric explicitly says not AI-generated |
+| Paste Sepolia tx links in `REPORT.md` | Only your wallet has these transactions |
+| Run manual tests on Sepolia + fill in `TESTING.md` | Requires MetaMask + live testnet |
+| Redeploy contract to Sepolia | Requires your MetaMask and Sepolia ETH |
+| `npm install` + `npx hardhat test` | Needs the install to complete (had network issues) |

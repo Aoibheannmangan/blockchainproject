@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -25,7 +25,7 @@
     </nav>
 
     <div class="security-warning">
-        Never share your private key or keystore password with anyone. This app runs on the Sepolia testnet â€” do not use real funds.
+        Never share your private key or keystore password with anyone. This app runs on the Sepolia testnet &mdash; do not use real funds.
     </div>
 
     <main>
@@ -72,15 +72,15 @@
             const el = $("#pwStrength");
             if (!pw) { el.text('').attr('class', 'pw-strength'); return; }
             if (pw.length < 8) {
-                el.text('Weak â€” at least 8 characters recommended').attr('class', 'pw-strength pw-weak');
+                el.text('Weak - at least 8 characters recommended').attr('class', 'pw-strength pw-weak');
             } else if (pw.length < 12 || !/[0-9]/.test(pw) || !/[^A-Za-z0-9]/.test(pw)) {
-                el.text('OK â€” add numbers and symbols for a stronger password').attr('class', 'pw-strength pw-ok');
+                el.text('OK - add numbers and symbols for a stronger password').attr('class', 'pw-strength pw-ok');
             } else {
                 el.text('Strong').attr('class', 'pw-strength pw-strong');
             }
         });
 
-        // Toggle blur on the private key field â€” hidden by default to prevent shoulder surfing
+        // Toggle blur on the private key field - hidden by default to prevent shoulder surfing
         $("#toggleKeyBtn").click(function() {
             const field = $("#privateKey");
             if (field.hasClass('blurred')) {
@@ -99,12 +99,11 @@
                 showError("Please enter a password for the Keystore.");
                 return;
             }
-            // A provider-less Web3 instance is used here so wallet creation
-            // never touches the network â€” keys are generated locally only
+            // A provider-less Web3 instance is used so wallet creation never touches the network
             const localWeb3 = new Web3();
             const wallet = localWeb3.eth.accounts.create();
             $("#walletAddress").val(wallet.address);
-            // Private key starts blurred â€” user must click Show to reveal it
+            // Private key starts blurred - user must click Show to reveal it
             $("#privateKey").val(wallet.privateKey).addClass('blurred');
             $("#toggleKeyBtn").text('Show');
             // Encrypt the private key with the user's password to produce a keystore file
@@ -144,4 +143,3 @@
 </script>
 </body>
 </html>
-

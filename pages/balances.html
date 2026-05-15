@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -25,7 +25,7 @@
     </nav>
 
     <div class="security-warning">
-        Never share your private key or keystore password with anyone. This app runs on the Sepolia testnet â€” do not use real funds.
+        Never share your private key or keystore password with anyone. This app runs on the Sepolia testnet &mdash; do not use real funds.
     </div>
 
     <main>
@@ -51,7 +51,7 @@
 
             <!-- Doorman: look up any address's TIX balance to verify a ticket at the door -->
             <div id="doormanView" class="role-view">
-                <p class="role-desc">Check how many tickets any wallet holds â€” use this to verify entry at the door.</p>
+                <p class="role-desc">Check how many tickets any wallet holds &mdash; use this to verify entry at the door.</p>
                 <label for="checkAddress">Wallet Address to Check:</label>
                 <input type="text" id="checkAddress" placeholder="0x..."/>
                 <br/><br/>
@@ -93,7 +93,7 @@
             $("#" + $(this).data("role")).addClass("active");
         });
 
-        // â”€â”€ Attendee: own ETH + TIX balance â”€â”€
+        // Attendee: own ETH + TIX balance
         async function loadAttendeeBalances() {
             try {
                 // Fetch native ETH balance and convert from wei to ether
@@ -116,7 +116,7 @@
             loadAttendeeBalances();
         });
 
-        // â”€â”€ Doorman: look up any address's TIX balance â”€â”€
+        // Doorman: look up any address's TIX balance
         $("#checkTicketBtn").click(async function() {
             if (!web3 || !account) {
                 const ok = await connectMetaMask();
@@ -139,17 +139,17 @@
                 $("#doormanResult").html(
                     '<p><strong>Address:</strong> ' + address + '</p>' +
                     '<p><strong>TIX Balance:</strong> ' + formatted + '</p>' +
-                    '<p><strong>Entry:</strong> ' + (hasTickets ? 'Valid ticket holder' : 'No tickets â€” entry denied') + '</p>'
+                    '<p><strong>Entry:</strong> ' + (hasTickets ? 'Valid ticket holder' : 'No tickets &mdash; entry denied') + '</p>'
                 );
             } catch (err) {
                 showError('Error checking address: ' + err.message);
             }
         });
 
-        // â”€â”€ Venue: contract ETH balance, vendor TIX holdings, total supply â”€â”€
+        // Venue: contract ETH balance, vendor TIX holdings, total supply
         async function loadVenueBalances() {
             try {
-                // ETH held in the contract â€” accumulated from all ticket purchases
+                // ETH held in the contract - accumulated from all ticket purchases
                 const contractEth = await web3.eth.getBalance(CONTRACT_ADDRESS);
                 $("#contractEthBalance").text(web3.utils.fromWei(contractEth, 'ether'));
 
@@ -158,7 +158,7 @@
                 const vendorBal = await contract.methods.balanceOf(vendorAddress).call();
                 $("#vendorTicketBalance").text(web3.utils.fromWei(vendorBal, 'ether'));
 
-                // Total TIX minted â€” decreases as tickets are sold to attendees
+                // Total TIX minted - decreases as tickets are sold to attendees
                 const supply = await contract.methods.totalSupply().call();
                 $("#totalSupply").text(web3.utils.fromWei(supply, 'ether'));
             } catch (err) {
@@ -181,4 +181,3 @@
 </script>
 </body>
 </html>
-
